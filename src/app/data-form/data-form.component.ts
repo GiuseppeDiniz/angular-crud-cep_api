@@ -1,17 +1,22 @@
 import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { DataService } from '../../service/data.service';
 
 @Component({
   selector: 'app-data-form',
   templateUrl: './data-form.component.html',
-  styleUrls: ['./data-form.component.css'],
+  styleUrls: ['./data-form.component.css']
 })
 export class DataFormComponent implements OnInit {
   formulario!: FormGroup;
   @Output() dataChanged: EventEmitter<void> = new EventEmitter<void>();
 
-  constructor(private fb: FormBuilder, private dataService: DataService) {}
+  constructor(
+    private fb: FormBuilder,
+    private httpClient: HttpClient,
+    private dataService: DataService
+  ) {}
 
   ngOnInit(): void {
     this.formulario = this.fb.group({
@@ -26,28 +31,41 @@ export class DataFormComponent implements OnInit {
       cidade: [''],
       estado: [''],
     });
+
+    // Inscreva-se no evento valueChanges do campo CEP
+    this.formulario.get('cep')?.valueChanges.subscribe((cep) => {
+      if (cep) {
+        this.onSearch();
+      }
+    });
   }
 
   onSubmit(): void {
     const formData = this.formulario.value;
-    this.dataService.setData(formData); // Armazenar no serviço
+    this.dataService.setData(formData);
     this.dataChanged.emit();
     this.formulario.reset({
-      id: this.generateUniqueId(), // Atualizar ID para o próximo valor
+      id: this.generateUniqueId(),
     });
   }
 
   onSearch(): void {
-    const idToSearch = this.formulario.get('id')?.value;
-    const storedData = this.dataService.getData();
+    const cep = this.formulario.get('cep')?.value;
 
-    const foundData = storedData.find((item: any) => item.id == idToSearch);
-
-    if (foundData) {
-      this.formulario.patchValue(foundData);
-    } else {
-      this.formulario.reset();
-      alert('ID não encontrado');
+    if (cep) {
+      this.httpClient.get(`https://viacep.com.br/ws/${cep}/json/`).subscribe(
+        (data: any) => {
+          this.formulario.patchValue({
+            rua: data.logradouro,
+            bairro: data.bairro,
+            cidade: data.localidade,
+            estado: data.uf,
+          });
+        },
+        (error) => {
+          console.error('Erro ao consultar o CEP', error);
+        }
+      );
     }
   }
 
