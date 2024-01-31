@@ -1,1 +1,23 @@
-
+<!-- view-list.component.html -->
+<div class="container mt-3">
+  <h2>Lista de Dados</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col">Nome</th>
+        <th scope="col">Email</th>
+        <!-- Adicione outras colunas conforme necessário -->
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Loop through localStorage data -->
+      <tr *ngFor="let item of localStorageData">
+        <th scope="row">{{ item.id }}</th>
+        <td>{{ item.nome }}</td>
+        <td>{{ item.email }}</td>
+        <!-- Adicione outras colunas conforme necessário -->
+      </tr>
+    </tbody>
+  </table>
+</div>
