@@ -1,22 +1,21 @@
-// data-form.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { DataService } from '../../service/data.service';
 
 @Component({
   selector: 'app-data-form',
   templateUrl: './data-form.component.html',
-  styleUrls: ['./data-form.component.css']
+  styleUrls: ['./data-form.component.css'],
 })
 export class DataFormComponent implements OnInit {
   formulario!: FormGroup;
-  nextId: number = 1; // Inicialize o contador com 1 ou qualquer valor inicial desejado
+  @Output() dataChanged: EventEmitter<void> = new EventEmitter<void>();
 
-  constructor(private fb: FormBuilder) { }
+  constructor(private fb: FormBuilder, private dataService: DataService) {}
 
   ngOnInit(): void {
-    // Inicialize o formulário e defina as validações necessárias
     this.formulario = this.fb.group({
-      id: [this.getNextId(), Validators.required], // Use o método para obter o próximo ID
+      id: [this.generateUniqueId()],
       nome: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       cep: [''],
@@ -25,25 +24,34 @@ export class DataFormComponent implements OnInit {
       rua: [''],
       bairro: [''],
       cidade: [''],
-      estado: ['']
+      estado: [''],
     });
   }
 
   onSubmit(): void {
-    // Lógica para armazenar no localStorage e sessionStorage
     const formData = this.formulario.value;
-
-    // Armazene no localStorage
-    localStorage.setItem('seuChaveLocalStorage', JSON.stringify(formData));
-
-    // Armazene no sessionStorage
-    sessionStorage.setItem('seuChaveSessionStorage', JSON.stringify(formData));
-
-    // Atualize o ID para o próximo valor
-    this.nextId++;
+    this.dataService.setData(formData); // Armazenar no serviço
+    this.dataChanged.emit();
+    this.formulario.reset({
+      id: this.generateUniqueId(), // Atualizar ID para o próximo valor
+    });
   }
 
-  private getNextId(): number {
-    return this.nextId;
+  onSearch(): void {
+    const idToSearch = this.formulario.get('id')?.value;
+    const storedData = this.dataService.getData();
+
+    const foundData = storedData.find((item: any) => item.id == idToSearch);
+
+    if (foundData) {
+      this.formulario.patchValue(foundData);
+    } else {
+      this.formulario.reset();
+      alert('ID não encontrado');
+    }
+  }
+
+  private generateUniqueId(): number {
+    return Math.floor(Math.random() * 1000);
   }
 }
